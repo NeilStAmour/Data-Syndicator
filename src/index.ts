@@ -9,7 +9,7 @@ const outputSize = 5;
 
 main();
 
-async function main() {
+export async function main() {
     console.log("Establishing connection to Market Entity...")
     const stockData: MarketData | Error = await syndicatorEngine.getData(symbol, interval, outputSize);
     if (stockData instanceof Error) {
@@ -20,4 +20,5 @@ async function main() {
         const average: number = syndicatorEngine.getAverage(stockData, outputSize);
         console.log("Average stock price over last " + outputSize + " days: " + average);
     }
+    return;
 }

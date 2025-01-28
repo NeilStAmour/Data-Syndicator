@@ -1,6 +1,7 @@
 
-node_modules/
-notes.txt
-dist/
+/node_modules
+/dist
+/coverage
 src/config/config.ts
 package-lock.json
+notes.txt
