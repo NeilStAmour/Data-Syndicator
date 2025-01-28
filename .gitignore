@@ -1,0 +1,6 @@
+
+node_modules/
+notes.txt
+dist/
+src/config/config.ts
+package-lock.json
