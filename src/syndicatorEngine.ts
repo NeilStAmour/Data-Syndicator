@@ -1,14 +1,11 @@
 
 import twelvedata from "twelvedata";
 import { config } from "./config/config";
-import { MarketData } from "./types/marketData";
+import { EntityData, MarketData, MarketError, MovingAverages } from "./types/marketData";
 
-// Define an interface for the function's return type
-interface stockValues {
-    greeting: string;
-    ageInFiveYears: number;
-    status: string;
-}
+const interval = "1h";
+const outputSize = 5000;
+const days = Math.floor(outputSize / 8);
 
 export class SyndicatorEngine {
     private client = twelvedata(config);
@@ -21,20 +18,27 @@ export class SyndicatorEngine {
      * @returns {MarketData}        - A collection of data for the provided stock
      * @throws  {Error}             - If the get operation fails.
      */
-    async getData(symbol: string, interval: string, outputSize: number): Promise<MarketData | Error> {
-        let params = {
+    async getData(symbol: string, interval: string, outputSize: number): Promise<MarketData | MarketError> {
+        let params: EntityData = {
             symbol: symbol,
             interval: interval,
             outputsize: outputSize,
         };
 
-        let data;
+        let marketData: MarketData | MarketError;
 
         try {
-            data = await this.client.timeSeries(params);
-            return data;
+            marketData = await this.client.timeSeries(params);
+            return marketData;
         } catch (error) {
-            return new Error((error as Error).message)
+            console.error("Error connecting to Market Entity");
+            let marketError: MarketError = {
+                code: 400,
+                message: "Error",
+                status: "error",
+                meta: params
+            };
+            return marketError;
         }
     }
 
@@ -52,5 +56,41 @@ export class SyndicatorEngine {
         const average: number = sum / outputSize;
 
         return average;
+    }
+
+    /**
+     * 
+     * @param   {MarketData} marketData 
+     * @param   {number}    days 
+     * @returns {number}
+     */
+    getMovingAverages(marketData: MarketData): MovingAverages {
+        let movingAverages: MovingAverages = {};
+        movingAverages[200] = this.getAverage(marketData, 200 * 8);
+        movingAverages[50] = this.getAverage(marketData, 50 * 8);
+        movingAverages[10] = this.getAverage(marketData, 10 * 8);
+        return movingAverages;
+    }
+
+    /**
+     * Determines whether a given asset should be acquired, liquidated, or held and the certainty level with which is makes the prediction.
+     * @param {string} symbol   - The ticker code for the asset
+     */
+    async marketPrognostication(symbol: string): Promise<MarketError | null> {
+        console.log("Establishing connection to Market Entity...")
+        const stockData: MarketData | MarketError = await this.getData(symbol, interval, outputSize);
+        if ("code" in stockData) {
+            console.log("Error establishing connection to Market Entity:")
+            console.log(stockData.message)
+            return stockData;
+        } else {
+            console.log("Connection to Market Entity established...")
+        }
+        console.log("Current asset price: " + stockData.values[0].open);
+        const SMA: MovingAverages = this.getMovingAverages(stockData);
+        console.log("200SMA of asset [" + symbol + "]: " + SMA[200]);
+        console.log("50SMA of asset [" + symbol + "]: " + SMA[50]);
+        console.log("10SMA of asset [" + symbol + "]: " + SMA[10]);
+        return null;
     }
 }

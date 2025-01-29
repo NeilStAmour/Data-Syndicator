@@ -1,7 +1,7 @@
 import { main } from "../index";
 
 describe("Main", () => {
-  test("add should return the sum of two numbers", async  () => {
+  test("running main should not throw any errors", async  () => {
     await expect(main()).resolves.not.toThrow();
   });
 });
